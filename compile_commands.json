@@ -1,0 +1,16 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/g++",
+      "-c",
+      "-std=c++17",
+      "-O3",
+      "-o",
+      "sini",
+      "sini.cc"
+    ],
+    "directory": "/home/lain/dev/sini",
+    "file": "/home/lain/dev/sini/sini.cc",
+    "output": "/home/lain/dev/sini/sini"
+  }
+]
