@@ -70,6 +70,28 @@ static std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
       ++index;
       continue;
     }
+
+    if (p[index] == '"') {
+      tok_t t{};
+      t.type_ = T_STRING;
+      ++index;
+
+      std::string string_lit;
+      while (index < sz && p[index] != '"') {
+        string_lit += p[index];
+        ++index;
+      }
+      if (p[index] != '"') {
+        // unterminated string.
+        break;
+      }
+      ++index;
+      t.data = std::move(string_lit);
+      result_vector.push_back(t);
+
+      continue;
+    }
+    break; // unrecognized token.
   }
 
   result_vector.push_back(tok_t{.type_ = T_EOF});

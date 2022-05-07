@@ -58,7 +58,16 @@ public:
   void write_number(const std::string &section, const std::string &name,
                     int64_t);
   void write_str(const std::string &section, const std::string &name,
-                    const std::string &value);
+                 const std::string &value);
+  [[nodiscard]] bool is_number(const std::string &section,
+                               const std::string &name) const {
+    return sections.at(section).keys_.at(name).type_ == T_NUMBER;
+  };
+
+  [[nodiscard]] bool is_str(const std::string &section,
+                               const std::string &name) const {
+    return sections.at(section).keys_.at(name).type_ == T_STRING;
+  };
 
 private:
   [[nodiscard]] status_t parse_keyval(const tok_list_t &tokens,
