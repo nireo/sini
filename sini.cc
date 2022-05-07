@@ -1,9 +1,13 @@
 #include "sini.h"
 #include <cctype>
 #include <cstddef>
+#include <cstdint>
+#include <cstdio>
 #include <fstream>
+#include <iostream>
 #include <iterator>
 #include <optional>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -177,9 +181,27 @@ status_t ini_t::parse_file(const std::string &filename) {
 
       continue;
     }
+
+    std::cerr << "invalid token";
+    break;
   }
 
   return STATUS_OK;
+}
+
+void ini_t::output_to_stream(std::basic_ofstream<char> &stream) const {
+  for (const auto &[name, section_data] : sections) {
+    stream << '[' << name << ']' << std::endl;
+    for (const auto &[k, v] : section_data.keys_) {
+      stream << k << " = ";
+      if (v.type_ == T_NUMBER) {
+        stream << std::get<int64_t>(v.data);
+      } else {
+        stream << std::get<std::string>(v.data);
+      }
+      stream << '\n';
+    }
+  }
 }
 
 } // namespace sini

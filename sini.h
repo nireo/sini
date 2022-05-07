@@ -54,11 +54,17 @@ public:
   template <typename T>
   void bind_value(const std::string &sect, const std::string &vname, T &tobind);
 
+  void output_to_stream(std::basic_ofstream<char> &stream) const;
+
 private:
-  [[nodiscard]] status_t parse_keyval(const tok_list_t &tokens, size_t &pos) noexcept;
-  [[nodiscard]] status_t parse_sect(const tok_list_t &tokens, size_t &pos) noexcept;
+  [[nodiscard]] status_t parse_keyval(const tok_list_t &tokens,
+                                      size_t &pos) noexcept;
+  [[nodiscard]] status_t parse_sect(const tok_list_t &tokens,
+                                    size_t &pos) noexcept;
 
   std::unordered_map<std::string, section_t> sections;
 };
 
 }; // namespace sini
+
+#endif
