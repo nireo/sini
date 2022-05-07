@@ -2,14 +2,13 @@
 #define _SINI_H
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
 #include <variant>
+#include <vector>
 
 namespace sini {
-
 enum tok_kind_t {
   T_NONE,
   T_IDENTIFER,
@@ -25,14 +24,12 @@ enum status_t {
 };
 
 struct tok_t {
-  tok_t &operator=(const tok_t &) = delete;
-  tok_t(const tok_t &) = delete;
-
   tok_kind_t type_ = T_NONE;
   std::variant<std::monostate, std::string, int64_t, char> data{
       std::monostate{}}; // type safe union
 };
 
+using tok_list_t = std::vector<tok_t>;
 struct section_t {
   section_t() {}
 
@@ -58,9 +55,10 @@ public:
   void bind_value(const std::string &sect, const std::string &vname, T &tobind);
 
 private:
+  [[nodiscard]] status_t parse_keyval(const tok_list_t &tokens, size_t &pos) noexcept;
+  [[nodiscard]] status_t parse_sect(const tok_list_t &tokens, size_t &pos) noexcept;
+
   std::unordered_map<std::string, section_t> sections;
 };
 
 }; // namespace sini
-
-#endif
