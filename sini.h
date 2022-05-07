@@ -53,8 +53,12 @@ public:
 
   template <typename T>
   void bind_value(const std::string &sect, const std::string &vname, T &tobind);
-
   void output_to_stream(std::basic_ofstream<char> &stream) const;
+
+  void write_number(const std::string &section, const std::string &name,
+                    int64_t);
+  void write_str(const std::string &section, const std::string &name,
+                    const std::string &value);
 
 private:
   [[nodiscard]] status_t parse_keyval(const tok_list_t &tokens,

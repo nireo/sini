@@ -204,4 +204,23 @@ void ini_t::output_to_stream(std::basic_ofstream<char> &stream) const {
   }
 }
 
+void ini_t::write_number(const std::string &section, const std::string &name,
+                         int64_t value) {
+  tok_t t{
+      .type_ = T_NUMBER,
+      .data = value,
+  };
+
+  sections[section][name] = std::move(t);
+}
+
+void ini_t::write_str(const std::string &section, const std::string &name,
+                      const std::string &value) {
+  tok_t t{
+      .type_ = T_STRING,
+      .data = value,
+  };
+
+  sections[section][name] = std::move(t);
+}
 } // namespace sini
