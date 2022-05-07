@@ -20,6 +20,9 @@ enum tok_kind_t {
 
 enum status_t {
   STATUS_OK,
+  STATUS_UNTERMINATED_STRING,
+  STATUS_EXPECTED_IDENTIFIER,
+  STATUS_BAD_PUNCTUATOR,
   STATUS_ERR,
 };
 
@@ -32,10 +35,6 @@ struct tok_t {
 using tok_list_t = std::vector<tok_t>;
 struct section_t {
   section_t() {}
-
-  section_t &operator=(const section_t &) = delete;
-  section_t(const section_t &) = delete;
-
   tok_t &operator[](const std::string &s) { return keys_[s]; }
 
   const tok_t &operator[](const std::string &s) const { return keys_.at(s); }
@@ -44,6 +43,8 @@ struct section_t {
       keys_; // just use tokens, since it contains the values.
 };
 
+// NumberAsString tells the class whether you want numbers represented as
+// std::string or int64_t
 class ini_t {
 public:
   [[nodiscard]] status_t parse_file(const std::string &filename);
@@ -53,7 +54,7 @@ public:
 
   template <typename T>
   void bind_value(const std::string &sect, const std::string &vname, T &tobind);
-  void output_to_stream(std::basic_ofstream<char> &stream) const;
+  void output_to_stream(std::basic_ostream<char> &stream) const;
 
   void write_number(const std::string &section, const std::string &name,
                     int64_t);
@@ -63,9 +64,8 @@ public:
                                const std::string &name) const {
     return sections.at(section).keys_.at(name).type_ == T_NUMBER;
   };
-
   [[nodiscard]] bool is_str(const std::string &section,
-                               const std::string &name) const {
+                            const std::string &name) const {
     return sections.at(section).keys_.at(name).type_ == T_STRING;
   };
 
@@ -74,7 +74,6 @@ private:
                                       size_t &pos) noexcept;
   [[nodiscard]] status_t parse_sect(const tok_list_t &tokens,
                                     size_t &pos) noexcept;
-
   std::unordered_map<std::string, section_t> sections;
 };
 

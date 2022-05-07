@@ -13,8 +13,6 @@
 #include <variant>
 #include <vector>
 
-#define CT tokens[pos]
-
 namespace sini {
 static std::string current_section_ = "global";
 
@@ -61,7 +59,7 @@ static std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
       continue;
     }
 
-    if (p[index] == '[' || p[index] == ']' || p[index] == '.') {
+    if (p[index] == '[' || p[index] == ']' || p[index] == '=') {
       tok_t t{};
       t.data = p[index];
       t.type_ = T_PUNCT;
@@ -91,6 +89,8 @@ static std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
 
       continue;
     }
+
+    std::cout << "unrecognized token" << p[index] << '\n';
     break; // unrecognized token.
   }
 
@@ -147,21 +147,21 @@ status_t ini_t::parse_sect(const tok_list_t &tokens, size_t &pos) noexcept {
   // in the loop we don't check whether the punctuator is [, ] or =
   // so we need to check here.
   if (!match_punct('[', tokens, pos)) {
-    return STATUS_ERR;
+    return STATUS_BAD_PUNCTUATOR;
   }
   ++pos;
 
   // the section name is an identifier, so we need to set the new identifier.
   if (tokens[pos].type_ != T_IDENTIFER) {
-    return STATUS_ERR;
+    return STATUS_EXPECTED_IDENTIFIER;
   }
   current_section_ = std::get<std::string>(tokens[pos].data);
-  ++pos;
+  sections[current_section_] = section_t{};
 
-  if (!match_punct(']', tokens, pos)) {
-    return STATUS_ERR;
-  }
   ++pos;
+  if (!match_punct(']', tokens, pos)) {
+    return STATUS_BAD_PUNCTUATOR;
+  }
 
   return STATUS_OK;
 }
@@ -179,39 +179,44 @@ status_t ini_t::parse_file(const std::string &filename) {
   file_output.assign((std::istreambuf_iterator<char>(f)),
                      std::istreambuf_iterator<char>());
 
+  std::cout << file_output << '\n';
+
   auto tokens = parse_tokens(file_output);
   size_t pos = 0;
+  std::cout << "got " << tokens.size() << " tokens\n";
+
+  for (const auto &tok : tokens) {
+    std::cout << tok.type_ << '\n';
+  }
 
   while (tokens[pos].type_ != T_EOF) {
     // we can either start a section, or assign key-value pairs.
-    if (CT.type_ == T_PUNCT) {
+    if (tokens[pos].type_ == T_PUNCT) {
       // we found a section definition
       auto status = parse_sect(tokens, pos);
-      if (status != STATUS_OK) {
-        return STATUS_ERR;
-      }
       ++pos;
 
       continue;
-    } else if (CT.type_ == T_IDENTIFER) {
+    } else if (tokens[pos].type_ == T_IDENTIFER) {
       // we found a key-value pair.
+      std::cout << "found key" << '\n';
       auto status = parse_keyval(tokens, pos);
       if (status != STATUS_OK) {
-        return STATUS_ERR;
+        return status;
       }
       ++pos;
 
       continue;
     }
 
-    std::cerr << "invalid token";
+    std::cerr << "invalid token" << tokens[pos].type_ << '\n';
     break;
   }
 
   return STATUS_OK;
 }
 
-void ini_t::output_to_stream(std::basic_ofstream<char> &stream) const {
+void ini_t::output_to_stream(std::basic_ostream<char> &stream) const {
   for (const auto &[name, section_data] : sections) {
     stream << '[' << name << ']' << std::endl;
     for (const auto &[k, v] : section_data.keys_) {
@@ -242,7 +247,6 @@ void ini_t::write_str(const std::string &section, const std::string &name,
       .type_ = T_STRING,
       .data = value,
   };
-
   sections[section][name] = std::move(t);
 }
 } // namespace sini
