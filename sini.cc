@@ -14,8 +14,8 @@
 #include <vector>
 
 namespace sini {
-static std::string current_section_ = "global";
 
+static std::string current_section_ = "global";
 static std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
   std::vector<tok_t> result_vector{};
   size_t index = 0;
@@ -134,7 +134,8 @@ status_t ini_t::parse_keyval(const tok_list_t &tokens, size_t &pos) noexcept {
   ++pos;
 
   if (!match_punct('=', tokens, pos)) {
-    return STATUS_ERR;
+    std::cout << "test3\n";
+    return STATUS_BAD_PUNCTUATOR;
   }
   ++pos;
   auto value = tokens[pos];
@@ -147,6 +148,7 @@ status_t ini_t::parse_sect(const tok_list_t &tokens, size_t &pos) noexcept {
   // in the loop we don't check whether the punctuator is [, ] or =
   // so we need to check here.
   if (!match_punct('[', tokens, pos)) {
+    std::cout << "test1\n";
     return STATUS_BAD_PUNCTUATOR;
   }
   ++pos;
@@ -160,6 +162,7 @@ status_t ini_t::parse_sect(const tok_list_t &tokens, size_t &pos) noexcept {
 
   ++pos;
   if (!match_punct(']', tokens, pos)) {
+    std::cout << "test2 " << tokens[pos].type_ << '\n';
     return STATUS_BAD_PUNCTUATOR;
   }
 
@@ -183,23 +186,20 @@ status_t ini_t::parse_file(const std::string &filename) {
 
   auto tokens = parse_tokens(file_output);
   size_t pos = 0;
-  std::cout << "got " << tokens.size() << " tokens\n";
-
-  for (const auto &tok : tokens) {
-    std::cout << tok.type_ << '\n';
-  }
 
   while (tokens[pos].type_ != T_EOF) {
     // we can either start a section, or assign key-value pairs.
     if (tokens[pos].type_ == T_PUNCT) {
       // we found a section definition
       auto status = parse_sect(tokens, pos);
+      if (status != STATUS_OK) {
+        return status;
+      }
       ++pos;
 
       continue;
     } else if (tokens[pos].type_ == T_IDENTIFER) {
       // we found a key-value pair.
-      std::cout << "found key" << '\n';
       auto status = parse_keyval(tokens, pos);
       if (status != STATUS_OK) {
         return status;
@@ -212,6 +212,8 @@ status_t ini_t::parse_file(const std::string &filename) {
     std::cerr << "invalid token" << tokens[pos].type_ << '\n';
     break;
   }
+
+  std::cout << "got " << sections.size() << " sections.\n";
 
   return STATUS_OK;
 }
@@ -228,6 +230,7 @@ void ini_t::output_to_stream(std::basic_ostream<char> &stream) const {
       }
       stream << '\n';
     }
+    stream << '\n';
   }
 }
 
