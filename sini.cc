@@ -46,7 +46,7 @@ static std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
     if (std::isalpha(p[index])) {
       std::string identifier_string = std::string(1, p[index]);
       ++index;
-      while (index < sz && std::isalpha(p[index])) {
+      while (index < sz && std::isalnum(p[index])) {
         identifier_string += p[index];
         ++index;
       }
