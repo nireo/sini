@@ -48,11 +48,9 @@ struct section_t {
       keys_; // just use tokens, since it contains the values.
 };
 
-// NumberAsString tells the class whether you want numbers represented as
-// std::string or int64_t
-class ini_t {
+template <typename CharT> class ini_t {
 public:
-  [[nodiscard]] status_t parse_stream(std::basic_ifstream<char> &stream) {
+  [[nodiscard]] status_t parse_stream(std::basic_ifstream<CharT> &stream) {
     auto tokens = parse_tokens(stream);
     return parse_logic(std::move(tokens));
   }
@@ -159,9 +157,9 @@ private:
     return STATUS_OK;
   }
 
-  std::vector<tok_t> parse_tokens(std::basic_ifstream<char> &s) {
+  std::vector<tok_t> parse_tokens(std::basic_ifstream<CharT> &s) {
     std::vector<tok_t> result_vector{};
-    char c;
+    CharT c;
     while (s.get(c)) {
       if (std::isspace(c)) {
         s.get(); // skip
@@ -272,13 +270,13 @@ private:
     return result_vector;
   }
 
-  static bool match_punct(char c, const tok_list_t &tokens,
+  static bool match_punct(CharT c, const tok_list_t &tokens,
                           size_t &pos) noexcept {
     if (tokens[pos].type_ != T_PUNCT) {
       return false;
     }
 
-    return c == std::get<char>(tokens[pos].data_);
+    return c == std::get<CharT>(tokens[pos].data_);
   }
 
   status_t parse_keyval(const tok_list_t &tokens, size_t &pos) noexcept {
