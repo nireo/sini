@@ -52,7 +52,12 @@ struct section_t {
 // std::string or int64_t
 class ini_t {
 public:
-  [[nodiscard]] status_t parse_file(const std::string &filename) noexcept {
+  [[nodiscard]] status_t parse_stream(std::basic_ifstream<char> &stream) {
+    auto tokens = parse_tokens(stream);
+    return parse_logic(std::move(tokens));
+  }
+
+  [[nodiscard]] status_t parse_str(const std::string &filename) noexcept {
     std::ifstream f(filename);
 
     // This way we don't have to rely on the string class' automatic
@@ -65,40 +70,8 @@ public:
     file_output.assign((std::istreambuf_iterator<char>(f)),
                        std::istreambuf_iterator<char>());
 
-    std::cout << file_output << '\n';
-
     auto tokens = parse_tokens(file_output);
-    size_t pos = 0;
-
-    while (tokens[pos].type_ != T_EOF) {
-      // we can either start a section, or assign key-value pairs.
-      if (tokens[pos].type_ == T_PUNCT) {
-        // we found a section definition
-        auto status = parse_sect(tokens, pos);
-        if (status != STATUS_OK) {
-          return status;
-        }
-        ++pos;
-
-        continue;
-      } else if (tokens[pos].type_ == T_IDENTIFER) {
-        // we found a key-value pair.
-        auto status = parse_keyval(tokens, pos);
-        if (status != STATUS_OK) {
-          return status;
-        }
-        ++pos;
-
-        continue;
-      }
-
-      std::cerr << "invalid token" << tokens[pos].type_ << '\n';
-      break;
-    }
-
-    std::cout << "got " << sections.size() << " sections.\n";
-
-    return STATUS_OK;
+    return parse_logic(std::move(tokens));
   }
 
   template <typename T>
@@ -157,6 +130,92 @@ public:
   };
 
 private:
+  status_t parse_logic(std::vector<tok_t> &&tokens) {
+    size_t pos = 0;
+
+    while (tokens[pos].type_ != T_EOF) {
+      // we can either start a section, or assign key-value pairs.
+      if (tokens[pos].type_ == T_PUNCT) {
+        // we found a section definition
+        auto status = parse_sect(tokens, pos);
+        if (status != STATUS_OK) {
+          return status;
+        }
+        ++pos;
+
+        continue;
+      } else if (tokens[pos].type_ == T_IDENTIFER) {
+        // we found a key-value pair.
+        auto status = parse_keyval(tokens, pos);
+        if (status != STATUS_OK) {
+          return status;
+        }
+        ++pos;
+
+        continue;
+      }
+      break;
+    }
+    return STATUS_OK;
+  }
+
+  std::vector<tok_t> parse_tokens(std::basic_ifstream<char> &s) {
+    std::vector<tok_t> result_vector{};
+    char c;
+    while (s.get(c)) {
+      if (std::isspace(c)) {
+        s.get(); // skip
+        continue;
+      }
+
+      if (std::isdigit(c)) {
+        std::string number_string = std::string(1, c);
+        while (std::isdigit(s.peek())) {
+          s.get(c);
+          number_string += c;
+        }
+        result_vector.push_back(tok_t(T_NUMBER, std::stoll(number_string)));
+        continue;
+      }
+
+      if (std::isalpha(c)) {
+        std::string identifier_string = std::string(1, c);
+        while (std::isalpha(s.peek())) {
+          s.get(c);
+          identifier_string += c;
+        }
+        result_vector.push_back(
+            tok_t(T_IDENTIFER, std::move(identifier_string)));
+        continue;
+      }
+
+      if (c == '[' || c == ']' || c == '=') {
+        result_vector.push_back(tok_t(T_PUNCT, c));
+        continue;
+      }
+
+      if (c == '"') {
+        s.get(c);
+        if (c == '"') {
+          result_vector.push_back(tok_t(T_STRING, ""));
+          continue;
+        }
+
+        std::string string_lit = std::string(1, c);
+        while (s.peek() != '"') {
+          s.get(c);
+          string_lit += c;
+        }
+        s.get();
+        result_vector.push_back(tok_t(T_STRING, string_lit));
+        continue;
+      }
+      break;
+    }
+    result_vector.push_back(tok_t(T_EOF, std::monostate{}));
+    return result_vector;
+  }
+
   std::vector<tok_t> parse_tokens(std::string_view p) noexcept {
     std::vector<tok_t> result_vector{};
     size_t index = 0;
